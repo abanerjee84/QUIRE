@@ -1,0 +1,7 @@
+node_modules/
+test/out/
+samples/*.marks.json
+build/
+dist/
+assets/
+*.log

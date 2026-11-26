@@ -1,0 +1,96 @@
+{
+  "name": "quire",
+  "productName": "Quire",
+  "version": "1.0.0",
+  "description": "Desktop PDF reader with highlighting, notes, ink markup and searchable text",
+  "main": "src/main.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "electron . --dev",
+    "sample": "node test/make-sample.js",
+    "check": "node test/check.js",
+    "test": "node test/check.js && node test/doc-edit.test.js && node test/smoke.js",
+    "doc-edit": "node test/doc-edit.test.js",
+    "smoke": "node test/smoke.js",
+    "e2e": "node test/e2e.js",
+    "e2e:chrome": "node test/e2e-chrome.js",
+    "e2e:interactions": "node test/e2e-interactions.js",
+    "e2e:markdown": "node test/e2e-markdown.js",
+    "e2e:edit": "node test/e2e-edit.js",
+    "e2e:tabs": "node test/e2e-tabs.js",
+    "e2e:image": "node test/e2e-image.js",
+    "e2e:session": "node test/e2e-session.js",
+    "icon": "node tools/make-icon.js",
+    "build": "node tools/make-icon.js && node tools/build.js",
+    "dist": "node tools/make-icon.js && node tools/dist.js",
+    "dist:release": "node tools/make-icon.js && node tools/dist.js --release",
+    "dist:portable": "node tools/dist.js portable",
+    "verify:exe": "node test/verify-exe.js",
+    "verify:portable": "node test/verify-exe.js --portable",
+    "launch:time": "node tools/launch-time.js",
+    "shots": "node test/shots.js"
+  },
+  "author": "abhi",
+  "license": "MIT",
+  "dependencies": {
+    "katex": "^0.19.1",
+    "marked": "^18.2.1",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^4.10.38"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "^33.4.0",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "com.quire.pdfreader",
+    "productName": "Quire",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/quire.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": false,
+      "artifactName": "Quire-${version}-installer.${ext}"
+    },
+    "portable": {
+      "artifactName": "Quire-${version}-${arch}-portable.${ext}",
+      "unpackDirName": "QuirePortable"
+    }
+  },
+  "allowScripts": {
+    "electron-winstaller@5.4.0": true
+  }
+}

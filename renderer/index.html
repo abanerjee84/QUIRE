@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <title>Quire</title>
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; worker-src 'self'">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="/vendor/katex/katex.min.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand" title="Quire — PDF reader with markup">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path d="M4 2h11l5 5v15H4z" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M15 2v5h5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M7 12h7" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>
+        <path d="M7 16h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <span>Quire</span>
+    </div>
+
+    <button class="btn" id="btn-open" data-icon="open" title="Open a document or image in a new tab (Ctrl+O)"><span>Open</span></button>
+    <span class="vrule"></span>
+
+    <div class="doc-tabs" id="doc-tabs" role="tablist" aria-label="Open documents"></div>
+    <span class="sr-only" id="doc-kind"></span>
+    <span class="sr-only" id="doc-name"></span>
+    <span class="save-state" id="save-state"></span>
+
+    <div class="top-actions">
+      <button class="btn ghost doc-action" id="btn-edit" title="Edit this Markdown file" hidden>Edit</button>
+      <button class="btn ghost doc-action" id="btn-save" title="Save annotations to the sidecar file (Ctrl+S)">Marks</button>
+      <div class="menu-wrap doc-action">
+        <button class="btn ghost" id="btn-export" title="Export (Ctrl+Shift+E)" aria-haspopup="menu" aria-expanded="false">Export</button>
+        <div class="menu" id="export-menu" hidden role="menu">
+          <button data-mode="annot"><span>PDF with annotations</span><kbd>Ctrl+Shift+E</kbd></button>
+          <button data-mode="flatten"><span>PDF with markup burned in</span><kbd>Ctrl+Shift+B</kbd></button>
+          <button data-mode="rendered" hidden><span>PDF as displayed</span></button>
+          <button data-mode="html" hidden><span>Markdown as HTML</span><kbd>Ctrl+Shift+H</kbd></button>
+          <button data-mode="marks" hidden><span>Marks as Markdown</span><kbd>Ctrl+Shift+M</kbd></button>
+          <button data-mode="save" hidden><span>Save document</span></button>
+          <button data-mode="save-as" hidden><span>Save document as…</span><kbd>Ctrl+Shift+S</kbd></button>
+        </div>
+      </div>
+      <span class="vrule"></span>
+      <button class="icon-btn" id="btn-theme" data-icon="theme" title="Toggle dark / light (Ctrl+Shift+L)"></button>
+      <button class="icon-btn" id="btn-preferences" title="Preferences" aria-label="Preferences"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 7h16M4 17h16M8 4v6M16 14v6"/></svg></button>
+      <button class="icon-btn doc-action" id="btn-sidebar" data-icon="panel" title="Toggle sidebar (Ctrl+B)"></button>
+    </div>
+  </header>
+
+  <div class="toolbar" id="toolbar" role="toolbar" aria-label="Document tools">
+    <div class="image-toolbar" id="image-toolbar" hidden>
+      <button class="btn ghost" id="image-rotate-left" title="Rotate left">↶ Rotate</button>
+      <button class="btn ghost" id="image-rotate-right" title="Rotate right">↷ Rotate</button>
+      <button class="btn ghost" id="image-flip-h">Flip horizontal</button>
+      <button class="btn ghost" id="image-flip-v">Flip vertical</button>
+      <span class="vrule"></span>
+      <button class="btn ghost" id="image-undo">Undo</button>
+      <button class="btn ghost" id="image-redo">Redo</button>
+      <button class="btn ghost" id="image-reset">Reset</button>
+      <span class="vrule"></span>
+      <button class="btn ghost" id="image-zoom-out" aria-label="Zoom out">−</button>
+      <button class="btn ghost" id="image-fit">Fit image</button>
+      <button class="btn ghost" id="image-zoom-in" aria-label="Zoom in">+</button>
+      <span class="toolbar-spacer"></span>
+      <button class="btn" id="image-copy" title="Copy the edited image to the clipboard">Copy image</button>
+      <button class="btn primary" id="image-export">Export image…</button>
+    </div>
+    <div class="group" id="nav-group" hidden>
+      <button class="icon-btn" id="btn-prev" data-icon="prev" title="Previous page (Ctrl+PageUp)"></button>
+      <div class="page-box">
+        <input class="page-field" id="page-input" value="1" inputmode="numeric" aria-label="Page number">
+        <span class="page-total" id="page-total">of 0</span>
+      </div>
+      <button class="icon-btn" id="btn-next" data-icon="next" title="Next page (Ctrl+PageDown)"></button>
+    </div>
+
+    <div class="group" id="zoom-group" hidden>
+      <button class="icon-btn" id="btn-zoom-out" data-icon="minus" title="Zoom out (Ctrl+-)"></button>
+      <button class="zoom-label" id="zoom-label" title="Reset to 100% (Ctrl+0)">100%</button>
+      <button class="icon-btn" id="btn-zoom-in" data-icon="plus" title="Zoom in (Ctrl++)"></button>
+      <span class="vrule"></span>
+      <button class="icon-btn" id="btn-fit-width" data-icon="fit-width" title="Fit width (Ctrl+Shift+F)"></button>
+      <button class="icon-btn" id="btn-fit-page" data-icon="fit-page" title="Fit page (Ctrl+Shift+P)"></button>
+    </div>
+
+    <div class="group tools" id="tools-group" hidden>
+      <button class="tool-btn" data-tool="select" title="Select / read (Ctrl+1)" aria-label="Select"></button>
+      <span class="divider"></span>
+      <button class="tool-btn" data-tool="highlight" title="Highlight (Ctrl+H)" aria-label="Highlight"></button>
+      <button class="tool-btn" data-tool="underline" title="Underline (Ctrl+U)" aria-label="Underline"></button>
+      <button class="tool-btn" data-tool="strikeout" title="Strikethrough (Ctrl+K)" aria-label="Strikethrough"></button>
+      <button class="tool-btn" data-tool="note" title="Sticky note (Ctrl+M)" aria-label="Sticky note"></button>
+      <span class="divider"></span>
+      <button class="tool-btn" data-tool="ink" title="Ink (Ctrl+D)" aria-label="Ink"></button>
+      <button class="tool-btn" data-tool="rect" title="Rectangle (Ctrl+R)" aria-label="Rectangle"></button>
+      <button class="tool-btn" data-tool="ellipse" title="Ellipse (Ctrl+E)" aria-label="Ellipse"></button>
+      <button class="tool-btn" data-tool="arrow" title="Arrow (Ctrl+A)" aria-label="Arrow"></button>
+      <span class="divider"></span>
+      <button class="tool-btn" data-tool="eraser" title="Eraser (Ctrl+4)" aria-label="Eraser"></button>
+    </div>
+
+    <div class="group tool-options" id="strip" hidden>
+      <span class="option-label">Colour</span>
+      <div class="swatches" id="swatches"></div>
+      <label class="width-ctl" id="width-ctl">
+        <span class="option-label">Weight</span>
+        <input type="range" id="ink-width" min="1" max="8" step="0.5" value="2">
+        <span class="range-val" id="ink-width-label">2 pt</span>
+      </label>
+    </div>
+
+    <div class="toolbar-spacer"></div>
+
+    <div class="group search-group" id="search-group" hidden>
+      <span class="search-icon" data-icon="search" aria-hidden="true"></span>
+      <input class="search-field" id="search-input" placeholder="Search" spellcheck="false" aria-label="Search document">
+      <span class="search-count" id="search-count"></span>
+      <button class="icon-btn" id="btn-search-prev" data-icon="up" title="Previous match (Shift+Enter)"></button>
+      <button class="icon-btn" id="btn-search-next" data-icon="down" title="Next match (Enter)"></button>
+    </div>
+
+    <div class="group history">
+      <button class="icon-btn" id="btn-undo" data-icon="undo" title="Undo (Ctrl+Z)"></button>
+      <button class="icon-btn" id="btn-redo" data-icon="redo" title="Redo (Ctrl+Shift+Z)"></button>
+    </div>
+  </div>
+
+  <div class="shell" id="shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="thumbs" id="tab-thumbs">Pages</button>
+        <button class="tab" data-tab="marks">Marks <span class="badge" id="mark-badge">0</span></button>
+        <button class="tab" data-tab="doc" id="tab-doc" title="Document editing">Document</button>
+      </div>
+      <div class="pane active" id="pane-thumbs"></div>
+      <div class="pane" id="pane-marks"></div>
+      <div class="pane" id="pane-doc"></div>
+    </aside>
+
+    <main class="viewer" id="viewer" data-tool="highlight" tabindex="-1">
+      <div class="welcome" id="welcome">
+        <div class="welcome-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="34" height="34">
+            <path d="M4 2h11l5 5v15H4z" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M15 2v5h5" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M7 12h7" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>
+            <path d="M7 16h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h1>Quire</h1>
+        <p class="tagline">Read and annotate documents, or view and edit images.</p>
+        <div class="welcome-actions">
+          <button class="btn primary big" id="welcome-open">Open a document</button>
+          <button class="btn ghost big" id="welcome-new">New blank PDF</button>
+        </div>
+        <p class="hint">PDF, Markdown, text or image — or drop a file anywhere in this window</p>
+        <div class="recent" id="recent-list"></div>
+      </div>
+    </main>
+  </div>
+
+  <footer class="statusbar">
+    <span id="status-file">No document</span>
+    <span id="status-msg"></span>
+    <span class="spacer"></span>
+    <span id="status-page"></span>
+    <span id="status-zoom"></span>
+    <span id="status-marks"></span>
+    <span id="status-selection" class="selection"></span>
+  </footer>
+
+  <dialog id="preferences" class="sheet" aria-labelledby="preferences-title">
+    <div class="dialog-head"><h2 id="preferences-title">Preferences</h2><p>Choose how Quire remembers your workspace.</p></div>
+    <div class="dialog-body preferences-body">
+      <label class="preference-row"><span><strong>Reopen last open files</strong><small>Restore your tabs the next time Quire opens.</small></span><input id="pref-restore" type="checkbox"></label>
+      <label class="preference-row"><span><strong>Remember reading position</strong><small>Restore page, scroll position and zoom where available.</small></span><input id="pref-position" type="checkbox"></label>
+      <label class="preference-row"><span><strong>Appearance</strong><small>Choose the reader's color theme.</small></span><select id="pref-theme"><option value="dark">Dark</option><option value="light">Light</option></select></label>
+      <p class="preferences-note">Files reopen from disk. Save document changes and export image edits before closing Quire.</p>
+    </div>
+    <form method="dialog" class="dialog-actions"><button class="btn primary">Done</button></form>
+  </dialog>
+
+  <dialog id="help" class="sheet">
+    <div class="dialog-head">
+      <h2>Keyboard shortcuts</h2>
+      <p>Everything you can do without reaching for the mouse.</p>
+    </div>
+    <div class="dialog-body">
+      <table id="help-table"></table>
+    </div>
+    <form method="dialog" class="dialog-actions">
+      <button class="btn primary">Close</button>
+    </form>
+  </dialog>
+
+  <dialog id="print-options" class="sheet">
+    <div class="dialog-head">
+      <h2>Print / export as PDF</h2>
+      <p>Choose the paper and how much of the page to keep.</p>
+    </div>
+    <div class="dialog-body">
+      <div class="opt-grid">
+        <label>Orientation<select id="po-orientation">
+          <option value="portrait">Portrait</option>
+          <option value="landscape">Landscape</option>
+        </select></label>
+        <label>Paper<select id="po-paper">
+          <option value="Letter">Letter</option>
+          <option value="A4">A4</option>
+          <option value="Legal">Legal</option>
+        </select></label>
+        <label>Margins<select id="po-margins">
+          <option value="normal">Normal (0.6 in)</option>
+          <option value="minimal">Minimal (0.2 in)</option>
+          <option value="none">None</option>
+        </select></label>
+        <label class="opt-check"><input type="checkbox" id="po-bg" checked>Background and marks</label>
+      </div>
+      <p class="dp-note" id="po-note">The page as it is displayed, printed at the chosen paper size.</p>
+    </div>
+    <div class="dialog-actions">
+      <button class="btn ghost" id="po-cancel">Cancel</button>
+      <button class="btn primary" id="po-print">Choose file…</button>
+    </div>
+  </dialog>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
